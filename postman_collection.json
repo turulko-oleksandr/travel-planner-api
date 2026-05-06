@@ -1,0 +1,290 @@
+{
+  "info": {
+    "name": "Travel Planner API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Complete collection for Travel Planner API — DevelopsToday test assessment"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "project_id", "value": "1", "type": "string" },
+    { "key": "place_id", "value": "1", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/",
+            "description": "Check that the API is running"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Get Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('token', json.access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "username", "value": "admin" },
+                { "key": "password", "value": "admin123" }
+              ]
+            },
+            "url": "{{base_url}}/auth/token",
+            "description": "Obtain a JWT access token (default credentials: admin / admin123)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Artworks (Art Institute of Chicago)",
+      "item": [
+        {
+          "name": "Search Artworks",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/artworks/search?q=monet&page=1&limit=5",
+              "host": ["{{base_url}}"],
+              "path": ["artworks", "search"],
+              "query": [
+                { "key": "q", "value": "monet" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "5" }
+              ]
+            },
+            "description": "Search artworks to find external IDs for adding to projects"
+          }
+        },
+        {
+          "name": "Get Artwork by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/artworks/27992",
+            "description": "Fetch a single artwork by its Art Institute ID"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "List Projects",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/projects?page=1&page_size=10",
+              "host": ["{{base_url}}"],
+              "path": ["projects"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "page_size", "value": "10" },
+                { "key": "status", "value": "active", "disabled": true }
+              ]
+            },
+            "description": "List all projects (supports pagination and status filter)"
+          }
+        },
+        {
+          "name": "Create Project (no places)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('project_id', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"European Art Tour\",\n  \"description\": \"A curated trip through Europe's finest artwork\",\n  \"start_date\": \"2025-06-01\"\n}"
+            },
+            "url": "{{base_url}}/projects",
+            "description": "Create a new travel project without places"
+          }
+        },
+        {
+          "name": "Create Project (with places)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('project_id', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Impressionism Highlights\",\n  \"description\": \"The greatest impressionist works\",\n  \"start_date\": \"2025-07-15\",\n  \"places\": [\n    { \"external_id\": 27992 },\n    { \"external_id\": 16487 }\n  ]\n}"
+            },
+            "url": "{{base_url}}/projects",
+            "description": "Create a project and import places from Art Institute API in one request"
+          }
+        },
+        {
+          "name": "Get Project",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/projects/{{project_id}}",
+            "description": "Retrieve a single project by ID"
+          }
+        },
+        {
+          "name": "Update Project",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Tour Name\",\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": "{{base_url}}/projects/{{project_id}}",
+            "description": "Partially update project name, description, or start_date"
+          }
+        },
+        {
+          "name": "Delete Project",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/projects/{{project_id}}",
+            "description": "Delete a project — fails if any place has been visited"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Places",
+      "item": [
+        {
+          "name": "List Places",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/places?page=1&page_size=10",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "places"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "page_size", "value": "10" },
+                { "key": "visited", "value": "false", "disabled": true }
+              ]
+            },
+            "description": "List all places for a project (supports pagination and visited filter)"
+          }
+        },
+        {
+          "name": "Add Place to Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('place_id', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"external_id\": 27992\n}"
+            },
+            "url": "{{base_url}}/projects/{{project_id}}/places",
+            "description": "Add a place (artwork) to an existing project — validates against Art Institute API"
+          }
+        },
+        {
+          "name": "Get Place",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/projects/{{project_id}}/places/{{place_id}}",
+            "description": "Get a single place within a project"
+          }
+        },
+        {
+          "name": "Update Place Notes",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"This painting is stunning — don't miss the brushwork on the water lilies!\"\n}"
+            },
+            "url": "{{base_url}}/projects/{{project_id}}/places/{{place_id}}",
+            "description": "Add or update notes for a place"
+          }
+        },
+        {
+          "name": "Mark Place as Visited",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_visited\": true\n}"
+            },
+            "url": "{{base_url}}/projects/{{project_id}}/places/{{place_id}}",
+            "description": "Mark a place as visited — when all places are visited the project becomes completed"
+          }
+        },
+        {
+          "name": "Update Notes and Mark Visited",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Amazing piece — worth a second visit.\",\n  \"is_visited\": true\n}"
+            },
+            "url": "{{base_url}}/projects/{{project_id}}/places/{{place_id}}",
+            "description": "Update both notes and visited status in a single request"
+          }
+        }
+      ]
+    }
+  ]
+}
