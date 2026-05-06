@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/travel_planner.db
+      - SECRET_KEY=super-secret-change-me
+      - CACHE_TTL_SECONDS=300
+    restart: unless-stopped
