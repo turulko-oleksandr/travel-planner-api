@@ -1,26 +1,45 @@
+from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt
 from jose import JWTError, jwt
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-
-# In-memory user store — sufficient for a demo / test task
-USERS: dict[str, bytes] = {
-    "admin": bcrypt.hashpw(b"admin123", bcrypt.gensalt()),
-}
+from app.models import User
 
 
-def verify_password(plain: str, hashed: bytes) -> bool:
-    return bcrypt.checkpw(plain.encode(), hashed)
+def hash_password(plain: str) -> str:
+    return bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
 
 
-def authenticate_user(username: str, password: str) -> bool:
-    hashed = USERS.get(username)
-    if not hashed:
-        return False
-    return verify_password(password, hashed)
+def verify_password(plain: str, hashed: str) -> bool:
+    return bcrypt.checkpw(plain.encode(), hashed.encode())
+
+
+async def get_user(db: AsyncSession, username: str) -> Optional[User]:
+    result = await db.execute(select(User).where(User.username == username))
+    return result.scalar_one_or_none()
+
+
+async def authenticate_user(db: AsyncSession, username: str, password: str) -> Optional[User]:
+    user = await get_user(db, username)
+    if not user or not user.is_active:
+        return None
+    if not verify_password(password, user.hashed_password):
+        return None
+    return user
+
+
+async def create_user(db: AsyncSession, username: str, password: str) -> User:
+    user = User(username=username, hashed_password=hash_password(password))
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
